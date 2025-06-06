@@ -3,21 +3,34 @@ import re
 import json
 
 def obtener_perfiles_wifi():
-    result = subprocess.check_output(['netsh', 'wlan', 'show', 'profiles'], capture_output=True)
-    profiles = re.findall(r":\s(.*)", result.stdout)
-    return [perfil.strip() for perfil in profiles if perfil.strip()]
+    try:
+        resultado = subprocess.run(
+            ['netsh', 'wlan', 'show', 'profiles'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        perfiles = re.findall(r":\s(.*)", resultado.stdout)
+        return [perfil.strip() for perfil in perfiles if perfil.strip()]
+    except subprocess.CalledProcessError as e:
+        print(f"Error al obtener perfiles WiFi: {e}")
+        return []
+
 def obtener_contraseña_wifi(perfil):
     try:
-        result = subprocess.run(
-            ['netsh', 'wlan', 'show', 'profile', perfil, 'key=clear'],
-            capture_output=True, text=True
+        resultado = subprocess.run(
+            ['netsh', 'wlan', 'show', 'profile', f'name="{perfil}"', 'key=clear'],
+            capture_output=True,
+            text=True,
+            check=True
         )
-        password = re.search(r"Contraseña\s*:\s(.*)", result.stdout)
-        return password.group(1) if password else "No encontrada"
+        contraseña = re.search(r"Contenido de la clave\s*:\s(.*)", resultado.stdout)
+        return contraseña.group(1) if contraseña else "No encontrada"
     except Exception as e:
         return f"Error: {str(e)}"
-def guardar_json(profiles):
-    datos = {perfil: obtener_contraseña_wifi(perfil) for perfil in profiles}
+
+def guardar_en_json(perfiles):
+    datos = {perfil: obtener_contraseña_wifi(perfil) for perfil in perfiles}
     with open('wifi_passwords.json', 'w') as f:
         json.dump(datos, f, indent=4)
     return datos
@@ -30,7 +43,7 @@ def main():
         print("No se han encontrado perfiles guardados")
         return
 
-    datos = guardar_json(profiles)
+    datos = guardar_en_json(profiles)
 
     print("Redes Wifi encontradas:")
     for perfil, password in datos.items():
