@@ -16,3 +16,28 @@ def obtener_contraseña_wifi(perfil):
         return password.group(1) if password else "No encontrada"
     except Exception as e:
         return f"Error: {str(e)}"
+def guardar_json(profiles):
+    datos = {perfil: obtener_contraseña_wifi(perfil) for perfil in profiles}
+    with open('wifi_passwords.json', 'w') as f:
+        json.dump(datos, f, indent=4)
+    return datos
+
+def main():
+    print("Obteniendo contraseñas Wifi guardadas...\n")
+    profiles = obtener_perfiles_wifi()
+
+    if not profiles:
+        print("No se han encontrado perfiles guardados")
+        return
+
+    datos = guardar_json(profiles)
+
+    print("Redes Wifi encontradas:")
+    for perfil, password in datos.items():
+        print(f"\nRed: {perfil}")
+        print(f"\nContraseña: {password}")
+
+    print("\nLos datos se han guardado en 'wifi_passwords.json'")
+
+if __name__ == "__main__":
+    main()
